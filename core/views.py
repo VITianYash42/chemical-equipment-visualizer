@@ -58,8 +58,8 @@ class HistoryView(APIView):
 
 class DownloadPDFView(APIView):
     # 🔒 Lock this too
-    authentication_classes = [authentication.BasicAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    # authentication_classes = [authentication.BasicAuthentication]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, file_id):
         try:
