@@ -46,4 +46,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 
+### Challenges & Learnings
+"One of the main challenges I faced was handling the CORS headers between the React frontend and Django backend. I also learned a lot about using FormData to correctly send files via Axios."
+
 Note: A superuser account is required. Username: admin Password: admin123
