@@ -1,6 +1,7 @@
 import sys
 import requests
 import matplotlib.pyplot as plt
+# We use the Qt5Agg backend to embed Matplotlib charts inside a PyQt window
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, 
                              QLabel, QFileDialog, QMessageBox, QHBoxLayout)
@@ -10,6 +11,7 @@ class ChemicalApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        # API Endpoint (Centralized Logic)
         self.backend_url = "http://127.0.0.1:8000/api/upload/"
 
     def initUI(self):
@@ -19,7 +21,6 @@ class ChemicalApp(QWidget):
 
         # Layouts
         main_layout = QVBoxLayout()
-        top_layout = QHBoxLayout()
 
         # Title
         self.title_label = QLabel("Chemical Equipment Dashboard")
@@ -35,74 +36,85 @@ class ChemicalApp(QWidget):
             }
             QPushButton:hover { background-color: #0056b3; }
         """)
-        self.btn_upload.clicked.connect(self.upload_file)
+        self.btn_upload.clicked.connect(self.handle_upload_click)
         main_layout.addWidget(self.btn_upload, alignment=Qt.AlignCenter)
 
-        # Stats Labels
+        # Stats Labels (Placeholder)
         self.stats_label = QLabel("Waiting for data...")
         self.stats_label.setStyleSheet("font-size: 14px; padding: 10px; background: white; border-radius: 5px;")
         self.stats_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(self.stats_label)
 
-        # Chart Area (Matplotlib)
+        # Chart Area (Matplotlib Canvas)
         self.figure = plt.figure(figsize=(8, 5))
         self.canvas = FigureCanvas(self.figure)
         main_layout.addWidget(self.canvas)
 
         self.setLayout(main_layout)
 
-    def upload_file(self):
-        # 1. Open File Dialog
+    def handle_upload_click(self):
+        # Open Native File Dialog
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(self, "Open CSV", "", "CSV Files (*.csv)", options=options)
         
         if file_path:
-            self.process_file(file_path)
+            self.send_data_to_backend(file_path)
 
-    def process_file(self, file_path):
+    def send_data_to_backend(self, file_path):
+        """
+        Sends the file to Django for processing.
+        We do NOT calculate stats here to ensure consistency with the Web App.
+        """
         self.stats_label.setText("Uploading and Analyzing...")
         
-        # 2. Send to Django Backend
         try:
+            # Open file in binary read mode ('rb')
             files = {'file': open(file_path, 'rb')}
+            
+            # Requesting the same API as the React Frontend
             response = requests.post(self.backend_url, files=files, auth=('admin', 'admin123'))
             
             if response.status_code == 201:
                 data = response.json()
-                self.update_ui(data)
+                self.update_dashboard(data)
             else:
-                QMessageBox.critical(self, "Error", f"Upload Failed: {response.text}")
-                self.stats_label.setText("Error during analysis.")
+                QMessageBox.critical(self, "API Error", f"Server returned error: {response.text}")
+                self.stats_label.setText("Analysis Failed.")
 
-        except Exception as e:
-            QMessageBox.critical(self, "Connection Error", f"Could not connect to Backend.\nEnsure Django is running.\nError: {e}")
+        except requests.exceptions.ConnectionError:
+            QMessageBox.critical(self, "Connection Error", "Could not reach Django Backend.\nIs the server running on port 8000?")
             self.stats_label.setText("Connection Error")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An unexpected error occurred: {e}")
 
-    def update_ui(self, data):
-        # 3. Update Stats Text
-        stats = data['stats']
+    def update_dashboard(self, data):
+        # 1. Update Text Stats
+        report = data['stats']
         summary_text = (
-            f"Total Equipment: {stats['total_count']}  |  "
-            f"Avg Flow: {stats['avg_flowrate']}  |  "
-            f"Avg Pressure: {stats['avg_pressure']}"
+            f"Total Equipment: {report['total_count']}  |  "
+            f"Avg Flow: {report['avg_flowrate']}  |  "
+            f"Avg Pressure: {report['avg_pressure']}"
         )
         self.stats_label.setText(summary_text)
 
-        # 4. Update Chart
+        # 2. Update Matplotlib Chart
         chart_data = data['chart_data']
         
         self.figure.clear()
         ax = self.figure.add_subplot(111)
         
-        # Create Bar Chart
+        # Plotting
         ax.bar(chart_data['equipment_names'], chart_data['flowrate'], color='skyblue', label='Flowrate')
         ax.bar(chart_data['equipment_names'], chart_data['pressure'], color='salmon', label='Pressure', alpha=0.7)
         
         ax.set_title('Equipment Flowrate vs Pressure')
         ax.set_ylabel('Value')
         ax.legend()
-        ax.tick_params(axis='x', rotation=45) # Rotate labels so they don't overlap
         
+        # Rotate x-axis labels to prevent overlap
+        ax.tick_params(axis='x', rotation=45) 
+        
+        # Refresh the canvas
         self.canvas.draw()
 
 if __name__ == '__main__':

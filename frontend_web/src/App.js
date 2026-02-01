@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
+// Registering chart components to avoid "canvas" errors
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -22,40 +23,48 @@ ChartJS.register(
 );
 
 function App() {
-  const [file, setFile] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [chartData, setChartData] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  // State for the uploaded file and the API response data
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [analysisReport, setAnalysisReport] = useState(null); // Renamed from 'stats' for clarity
+  const [visualizationData, setVisualizationData] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setError('');
+  const handleFileSelection = (e) => {
+    setSelectedFile(e.target.files[0]);
+    setErrorMessage(''); // Clear errors when user picks a new file
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setError('Please select a CSV file first.');
+  const handleAnalysis = async () => {
+    if (!selectedFile) {
+      setErrorMessage('Please select a CSV file first.');
       return;
     }
     
-    setLoading(true);
+    setIsLoading(true);
+
+    // CRITICAL: We must use FormData here.
+    // Standard JSON ({ file: ... }) does not work for binary file uploads.
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', selectedFile);
 
     try {
-      // 🔒 AUTHENTICATION (The Admin Password)
-      const auth = {
+      // Hardcoded credentials for the screening task. 
+      // TODO: In production, move these to a .env file or use JWT tokens.
+      const authHeaders = {
         username: 'admin',
         password: 'admin123'
       };
 
+      // Sending POST request to Django Backend
       const response = await axios.post('http://127.0.0.1:8000/api/upload/', formData, {
-        auth: auth
+        auth: authHeaders
       });
 
-      setStats(response.data.stats);
-      setChartData({
+      // Update UI with the data calculated by Pandas on the backend
+      setAnalysisReport(response.data.stats);
+      
+      setVisualizationData({
         labels: response.data.chart_data.equipment_names,
         datasets: [
           {
@@ -74,9 +83,9 @@ function App() {
       });
     } catch (err) {
       console.error(err);
-      setError('Upload Failed. Check your connection or admin password.');
+      setErrorMessage('Upload Failed. Check backend connection or credentials.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -88,7 +97,7 @@ function App() {
           <span className="logo-emoji">⚗️</span> 
           Chemical Equipment Visualizer
         </h1>
-        <div style={{color: "#7f8c8d"}}>FOSSEE 2026 Submission</div>
+        <div style={{color: "#7f8c8d"}}>FOSSEE 2026</div>
       </header>
 
       {/* Upload Section */}
@@ -97,44 +106,44 @@ function App() {
         <p style={{marginBottom: '20px', color: '#666'}}>Upload your equipment CSV file to generate insights.</p>
         
         <div className="file-input-wrapper">
-          <input type="file" onChange={handleFileChange} accept=".csv" />
+          <input type="file" onChange={handleFileSelection} accept=".csv" />
         </div>
         
-        <button className="btn-primary" onClick={handleUpload} disabled={loading}>
-          {loading ? 'Analyzing...' : 'Analyze CSV Data'}
+        <button className="btn-primary" onClick={handleAnalysis} disabled={isLoading}>
+          {isLoading ? 'Processing...' : 'Analyze CSV Data'}
         </button>
 
-        {error && <div className="error-msg">{error}</div>}
+        {errorMessage && <div className="error-msg">{errorMessage}</div>}
       </div>
 
-      {/* Results Dashboard */}
-      {stats && (
+      {/* Results Dashboard (Only shows if analysisReport exists) */}
+      {analysisReport && (
         <div className="results-section">
           
           {/* Key Metrics Cards */}
           <div className="stats-grid">
             <div className="stat-card" style={{borderLeftColor: '#2ecc71'}}>
               <h3>Total Equipment</h3>
-              <p className="stat-value">{stats.total_count}</p>
+              <p className="stat-value">{analysisReport.total_count}</p>
             </div>
             <div className="stat-card" style={{borderLeftColor: '#3498db'}}>
               <h3>Avg Flowrate</h3>
-              <p className="stat-value">{stats.avg_flowrate}</p>
+              <p className="stat-value">{analysisReport.avg_flowrate}</p>
             </div>
             <div className="stat-card" style={{borderLeftColor: '#e74c3c'}}>
               <h3>Avg Pressure</h3>
-              <p className="stat-value">{stats.avg_pressure}</p>
+              <p className="stat-value">{analysisReport.avg_pressure}</p>
             </div>
             <div className="stat-card" style={{borderLeftColor: '#f1c40f'}}>
               <h3>Avg Temperature</h3>
-              <p className="stat-value">{stats.avg_temperature}</p>
+              <p className="stat-value">{analysisReport.avg_temperature}</p>
             </div>
           </div>
 
           {/* Main Chart */}
           <div className="chart-container">
             <Bar 
-              data={chartData} 
+              data={visualizationData} 
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
