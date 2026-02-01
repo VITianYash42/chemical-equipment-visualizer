@@ -97,7 +97,7 @@ function App() {
           <span className="logo-emoji">⚗️</span> 
           Chemical Equipment Visualizer
         </h1>
-        <div style={{color: "#7f8c8d"}}>FOSSEE 2026</div>
+        <div style={{color: "#7f8c8d"}}> FOSSEE 2026 </div>
       </header>
 
       {/* Upload Section */}
