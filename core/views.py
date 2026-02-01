@@ -14,7 +14,7 @@ class FileUploadView(APIView):
     
     # Using BasicAuth for simplicity in this screening task
     authentication_classes = [authentication.BasicAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated] 
 
     def post(self, request, *args, **kwargs):
         # Defensive check: Ensure a file is actually present in the request
