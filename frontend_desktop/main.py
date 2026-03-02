@@ -15,7 +15,7 @@ class ChemicalApp(QWidget):
         self.backend_url = "http://127.0.0.1:8000/api/upload/"
 
     def initUI(self):
-        self.setWindowTitle('FOSSEE Chemical Visualizer (Desktop)')
+        self.setWindowTitle('Chemical Visualizer (Desktop)')
         self.setGeometry(100, 100, 900, 700)
         self.setStyleSheet("background-color: #f0f0f0;")
 

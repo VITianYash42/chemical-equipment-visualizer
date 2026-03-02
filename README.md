@@ -1,6 +1,6 @@
 # Chemical Equipment Parameter Visualizer
 
-A hybrid Web and Desktop application for visualizing chemical equipment data, built for the FOSSEE Semester Long Internship 2026 Screening Task.
+A full-stack data science platform featuring a React.js Web Dashboard and a PyQt5 Desktop Client, powered by a centralized Django REST API and Pandas.
 
 ## 🚀 Project Overview
 This tool allows chemical engineers to upload equipment data (CSV), analyzes key metrics (Flowrate, Pressure, Temperature), and visualizes the results on both a Web Dashboard and a Desktop Application.
@@ -30,7 +30,7 @@ This tool allows chemical engineers to upload equipment data (CSV), analyzes key
 ```bash
 # Clone the repository
 git clone <YOUR_GITHUB_REPO_LINK_HERE>
-cd fossee-internship-2026
+cd chemical-equipment-visualizer
 
 # Create and Activate Virtual Environment
 python -m venv venv
